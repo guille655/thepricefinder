@@ -22,10 +22,13 @@
       }
       main {
         min-height: 100svh;
-        display: grid;
-        place-items: center;
-        padding: 4rem 1rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        padding: 4rem; /* Menos padding vertical */
       }
+
       h1 {
         margin: 0;
         text-align: center;
@@ -34,11 +37,36 @@
         font-size: clamp(2rem, 6vw, 4rem);
         letter-spacing: -0.02em;
       }
+    
+    .buttons {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.btn {
+  background-color: #007bff; /* Azul */
+  color: white;
+  text-decoration: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+}
+
+.btn:hover {
+  background-color: #0056b3; /* Azul más oscuro en hover */
+}  
+
     </style>
   </head>
   <body>
     <main role="main" aria-label="Bienvenida">
       <h1>Bienvenido a ThePriceFinder</h1>
+      <div class="buttons">
+        <a href="#" class="btn">Log In</a>
+        <a href="#" class="btn">Sign Up</a>
+      </div>
     </main>
   </body>
 </html>
