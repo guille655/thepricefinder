@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Panel - ThePriceFinder</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#fff; --fg:#000; --muted:#f0f0f0; --blue:#007bff; }
+    * { box-sizing: border-box; }
+    body { font-family:"Inter",sans-serif; background:var(--bg); color:var(--fg); margin:0; }
+    .top-bar { width:100%; height:50px; background:var(--muted); }
+    .wrap { max-width:900px; margin:2rem auto; padding:0 1rem; }
+    h1 { font-weight:800; line-height:1.1; font-size:clamp(2rem,5vw,3rem); letter-spacing:-0.02em; margin:.5rem 0 1rem; }
+    .card { border:1px solid #eee; border-radius:12px; padding:1.25rem; box-shadow:0 2px 8px rgba(0,0,0,.04); }
+    .row { display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+    .btn { display:inline-block; padding:.6rem 1rem; border-radius:8px; background:var(--blue); color:#fff; text-decoration:none; font-weight:600; }
+    .muted { color:#555; }
+    ul { margin:.5rem 0 0 1.25rem; }
+  </style>
+</head>
+<body>
+  <div class="top-bar"></div>
+  <div class="wrap">
+    <h1>Bienvenido, <span id="userEmail">usuario</span></h1>
+
+    <div class="card">
+      <div class="row">
+        <div>
+          <div class="muted">Tu cuenta está lista ✅</div>
+          <ul>
+            <li>Próximo paso: definir las fuentes de precios.</li>
+            <li>Más adelante: panel con comparativas y alertas.</li>
+          </ul>
+        </div>
+        <a class="btn" href="#" id="logoutBtn">Cerrar sesión</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  const API_BASE = "http://127.0.0.1:5000";
+
+  const token = localStorage.getItem('tp_token');
+  if (!token) {
+    // No hay token → volver a login
+    window.location.href = 'login.html';
+  } else {
+    // Validar token con la API y obtener email
+    fetch(`${API_BASE}/api/me`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    .then(async (res) => {
+      if (!res.ok) throw new Error('no-auth');
+      const data = await res.json();
+      document.getElementById('userEmail').textContent = data.email || 'usuario';
+    })
+    .catch(() => {
+      // Token inválido/expirado → limpiar y volver a login
+      localStorage.removeItem('tp_token');
+      localStorage.removeItem('tp_user_email');
+      window.location.href = 'login.html';
+    });
+  }
+
+  // Cerrar sesión
+  document.getElementById('logoutBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    localStorage.removeItem('tp_token');
+    localStorage.removeItem('tp_user_email');
+    window.location.href = 'index.html';
+  });
+</script>
+
+</body>
+</html>

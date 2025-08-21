@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Registro - ThePriceFinder</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#fff; --fg:#000; --muted:#f0f0f0; --blue:#007bff; --blue-d:#0056b3; --err:#c62828; --ok:#1b5e20; }
+    * { box-sizing: border-box; }
+    body { font-family:"Inter",sans-serif; background:var(--bg); color:var(--fg); display:flex; flex-direction:column; align-items:center; min-height:100vh; margin:0; padding:2rem 1rem; }
+    .top-bar { width:100%; height:50px; background:var(--muted); margin-bottom:1rem; }
+    h1 { font-weight:800; line-height:1.1; font-size:clamp(2rem,6vw,3rem); letter-spacing:-0.02em; margin:0 0 1rem; text-align:center; }
+    form { background:#f9f9f9; padding:2rem; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,.1); width:100%; max-width:360px; }
+    h2 { margin-top:0; text-align:center; font-weight:600; }
+    label { display:block; font-size:.95rem; margin-top:.5rem; }
+    input { width:100%; padding:.75rem; margin-top:.25rem; border:1px solid #ccc; border-radius:6px; font-size:1rem; }
+    .field-error { color:var(--err); font-size:.85rem; margin-top:.25rem; min-height:1.1em; }
+    .helper { font-size:.85rem; color:#666; margin-top:.25rem; }
+    button { width:100%; padding:.75rem; background:var(--blue); color:#fff; border:0; border-radius:6px; font-size:1rem; font-weight:600; cursor:pointer; margin-top:.75rem; }
+    button:hover { background:var(--blue-d); }
+    .form-msg { margin-top:.75rem; font-size:.95rem; text-align:center; min-height:1.2em; }
+    .ok { color:var(--ok); } .err { color:var(--err); }
+    .back-link { display:block; text-align:center; margin-top:1rem; text-decoration:none; }
+  </style>
+</head>
+<body>
+  <div class="top-bar"></div>
+  <h1>Registro en ThePriceFinder</h1>
+
+  <form id="signup-form" novalidate>
+    <h2>Crear cuenta</h2>
+
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" placeholder="tu@email.com" autocomplete="email" required>
+    <div id="emailErr" class="field-error"></div>
+
+    <label for="password">Contraseña</label>
+    <input id="password" name="password" type="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password" required>
+    <div class="helper">Usa al menos 8 caracteres.</div>
+    <div id="passErr" class="field-error"></div>
+
+    <button type="submit" id="submitBtn">Registrarse</button>
+    <div id="formMsg" class="form-msg" aria-live="polite"></div>
+
+    <a class="back-link" href="index.html">← Volver a la landing</a>
+  </form>
+
+  <script>
+  const API_BASE = "http://127.0.0.1:5000"; // backend local
+
+  const form      = document.getElementById('signup-form');
+  const email     = document.getElementById('email');
+  const password  = document.getElementById('password');
+  const emailErr  = document.getElementById('emailErr');
+  const passErr   = document.getElementById('passErr');
+  const formMsg   = document.getElementById('formMsg');
+  const submitBtn = document.getElementById('submitBtn');
+
+  function isValidEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // Limpia mensajes previos
+    emailErr.textContent = '';
+    passErr.textContent  = '';
+    formMsg.textContent  = '';
+    formMsg.className    = 'form-msg';
+    formMsg.style.display = 'block';
+    formMsg.style.visibility = 'visible';
+
+    // Validación mínima en cliente
+    let ok = true;
+    if (!isValidEmail(email.value.trim())) { emailErr.textContent = 'Introduce un email válido.'; ok = false; }
+    if ((password.value || '').length < 8) { passErr.textContent  = 'La contraseña debe tener al menos 8 caracteres.'; ok = false; }
+    if (!ok) return;
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Enviando...';
+
+    try {
+      const res = await fetch(`${API_BASE}/api/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.value.trim(), password: password.value })
+      });
+
+      // Intenta leer JSON; si no hay, cae a objeto vacío
+      let data = {};
+      const ct = res.headers.get('content-type') || '';
+      if (ct.includes('application/json')) {
+        try { data = await res.json(); } catch(_) { data = {}; }
+      }
+
+      console.log('[signup] status=', res.status, 'data=', data);
+
+      // Manejo explícito por estado
+      if (res.status === 409) {
+        formMsg.textContent = data.error || 'Ese email ya está registrado';
+        formMsg.classList.add('err');
+        return;
+      }
+      if (res.status === 201) {
+        formMsg.textContent = (data && data.message) || '¡Registro correcto!';
+        formMsg.classList.add('ok');
+        form.reset();
+        return;
+      }
+      if (!res.ok) {
+        formMsg.textContent = (data && (data.error || data.message)) || `Error (${res.status})`;
+        formMsg.classList.add('err');
+        return;
+      }
+
+      // Fallback genérico (por si algún proxy cambia el código)
+      formMsg.textContent = (data && (data.message || '¡Registro correcto!')) || '¡Registro correcto!';
+      formMsg.classList.add('ok');
+      form.reset();
+
+    } catch (err) {
+      console.error('Network/JS error:', err);
+      formMsg.textContent = 'No se pudo contactar con el servidor.';
+      formMsg.classList.add('err');
+      alert('No se pudo contactar con el servidor. ¿Backend encendido en 127.0.0.1:5000?');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Registrarse';
+      // Asegura que el mensaje se vea
+      formMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  });
+</script>
+
+</body>
+</html>
